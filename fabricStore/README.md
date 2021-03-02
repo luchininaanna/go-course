@@ -23,6 +23,6 @@
 
 ![Component diagram](/fabricStore/diagrams/component_diagram.png)
 
-## Диаграмма последовательностей
+## Диаграмма последовательности
 На следующей диаграмме представлен один из возможных кейсов в приложении.
 ![Sequence diagram](/fabricStore/diagrams/sequence_diagram.png)

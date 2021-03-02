@@ -84,8 +84,7 @@ func logMiddleware(h http.Handler) http.Handler {
 			"remoteAddr": r.RemoteAddr,
 			"userAgent":  r.UserAgent(),
 			"time":       start,
-			"reqDur":     time.Now().Sub(start),
+			"reqDur":     time.Now().Sub(start).String(),
 		}).Info("got a new request")
-
 	})
 }

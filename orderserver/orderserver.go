@@ -12,11 +12,7 @@ import (
 
 func main() {
 	log.SetFormatter(&log.JSONFormatter{})
-	file, err := os.OpenFile("my.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
-	if err == nil {
-		log.SetOutput(file)
-		defer file.Close()
-	}
+	log.SetOutput(os.Stdout)
 
 	serverUrl := ":8000"
 
@@ -24,14 +20,14 @@ func main() {
 	srv := startServer(serverUrl)
 
 	waitForKillSignal(killSignalChan)
-	srv.Shutdown(context.Background())
+	log.Fatal(srv.Shutdown(context.Background()))
 }
 
 func startServer(serverUrl string) *http.Server {
 	router := transport.Router()
 	srv := &http.Server{Addr: serverUrl, Handler: router}
 	go func() {
-		log.Fatal(srv.ListenAndServe)
+		log.Fatal(srv.ListenAndServe())
 	}()
 
 	return srv

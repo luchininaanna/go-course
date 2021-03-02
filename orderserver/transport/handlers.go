@@ -76,13 +76,16 @@ func order(w http.ResponseWriter, r *http.Request) {
 
 func logMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		h.ServeHTTP(w, r)
 		log.WithFields(log.Fields{
 			"method":     r.Method,
 			"url":        r.URL,
 			"remoteAddr": r.RemoteAddr,
 			"userAgent":  r.UserAgent(),
-			"time":       time.Now(),
+			"time":       start,
+			"reqDur":     time.Now().Sub(start),
 		}).Info("got a new request")
-		h.ServeHTTP(w, r)
+
 	})
 }

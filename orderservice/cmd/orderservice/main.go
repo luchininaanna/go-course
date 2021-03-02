@@ -4,7 +4,7 @@ import (
 	"context"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"orderserver/transport"
+	"orderserver/pkg/orderservice"
 	"os"
 	"os/signal"
 	"syscall"
@@ -24,7 +24,7 @@ func main() {
 }
 
 func startServer(serverUrl string) *http.Server {
-	router := transport.Router()
+	router := orderservice.Router()
 	srv := &http.Server{Addr: serverUrl, Handler: router}
 	go func() {
 		log.Fatal(srv.ListenAndServe())

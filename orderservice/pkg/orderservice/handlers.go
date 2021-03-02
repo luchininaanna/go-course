@@ -1,4 +1,4 @@
-package transport
+package orderservice
 
 import (
 	"encoding/json"
@@ -7,7 +7,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
-	"orderserver/model"
 	"time"
 )
 
@@ -21,13 +20,16 @@ func Router() http.Handler {
 }
 
 func helloWorld(w http.ResponseWriter, _ *http.Request) {
-	fmt.Fprint(w, "Hello World!")
+	_, err := fmt.Fprint(w, "Hello World!")
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func orders(w http.ResponseWriter, _ *http.Request) {
-	orders := model.OrderList{
-		Orders: []model.Order{
-			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []model.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+	orders := OrderList{
+		Orders: []Order{
+			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
 		},
 	}
 
@@ -55,8 +57,8 @@ func order(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	detailedOrder := model.DetailedOrder{
-		Order: model.Order{ID: id, MenuItems: []model.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+	detailedOrder := DetailedOrder{
+		Order: Order{ID: id, MenuItems: []MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
 		Cost:  1,
 		Time:  1,
 	}
@@ -84,7 +86,7 @@ func logMiddleware(h http.Handler) http.Handler {
 			"remoteAddr": r.RemoteAddr,
 			"userAgent":  r.UserAgent(),
 			"time":       start,
-			"reqDur":     time.Now().Sub(start).String(),
+			"reqDur":     time.Since(start).String(),
 		}).Info("got a new request")
 	})
 }

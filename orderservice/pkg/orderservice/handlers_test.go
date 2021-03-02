@@ -1,11 +1,10 @@
-package transport
+package orderservice
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"orderserver/model"
 	"testing"
 )
 
@@ -22,7 +21,7 @@ func TestOrderList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	items := model.OrderList{}
+	items := OrderList{}
 	if err = json.Unmarshal(jsonString, &items); err != nil {
 		t.Errorf("Can't parse json response with error %v", err)
 	}

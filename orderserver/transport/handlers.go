@@ -1,10 +1,13 @@
 package transport
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"net/http"
+	"orderserver/model"
 	"time"
 )
 
@@ -22,14 +25,52 @@ func helloWorld(w http.ResponseWriter, _ *http.Request) {
 }
 
 func orders(w http.ResponseWriter, _ *http.Request) {
-	fmt.Fprint(w, "[{\n    \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"menuItems\": [{\n        \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n        \"quantity\": 0\n    }]\n}]")
+	orders := model.OrderList{
+		Orders: []model.Order{
+			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []model.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+		},
+	}
+
+	jsonOrders, err := json.Marshal(orders)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	if _, err = io.WriteString(w, string(jsonOrders)); err != nil {
+		log.WithField("err", err).Error("write response error")
+	}
 }
 
 func order(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["ID"]
-	if id == "3fa85f64-5717-4562-b3fc-2c963f66afa6" {
-		fmt.Fprint(w, "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"orderedAtTimestamp\": 0,\n  \"cost\": 0,\n  \"menuItems\": [{\n      \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n      \"quantity\": 0\n  }]\n}")
+	id, found := mux.Vars(r)["ID"]
+	if !found {
+		w.WriteHeader(http.StatusBadRequest)
+		_, err := fmt.Fprint(w, "Order not found")
+		if err != nil {
+			log.Error(err)
+		}
+		return
+	}
+
+	detailedOrder := model.DetailedOrder{
+		Order: model.Order{ID: id, MenuItems: []model.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+		Cost:  1,
+		Time:  1,
+	}
+
+	jsonDetailedOrder, err := json.Marshal(detailedOrder)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	if _, err = io.WriteString(w, string(jsonDetailedOrder)); err != nil {
+		log.WithField("err", err).Error("write response error")
 	}
 }
 

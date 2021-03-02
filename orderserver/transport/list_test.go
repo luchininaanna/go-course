@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestList(t *testing.T) {
+func TestOrderList(t *testing.T) {
 	w := httptest.NewRecorder()
 	orders(w, nil)
 	response := w.Result()
@@ -22,7 +22,7 @@ func TestList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	items := make([]model.OrderListItem, 10)
+	items := model.OrderList{}
 	if err = json.Unmarshal(jsonString, &items); err != nil {
 		t.Errorf("Can't parse json response with error %v", err)
 	}

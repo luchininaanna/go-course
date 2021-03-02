@@ -1,18 +1,21 @@
 package model
 
-type OrderListItem struct {
+type Order struct {
 	ID        string     `json:"id"`
 	MenuItems []MenuItem `json:"menuItems"`
-}
-
-type OrderItem struct {
-	ID               string     `json:"id"`
-	OrderAtTimestamp int        `json:"orderAtTimestamp"`
-	Cost             int        `json:"cost"`
-	MenuItems        []MenuItem `json:"menuItems"`
 }
 
 type MenuItem struct {
 	ID       string `json:"id"`
 	Quantity int    `json:"quantity"`
+}
+
+type OrderList struct {
+	Orders []Order `json:"orders"`
+}
+
+type DetailedOrder struct {
+	Order
+	Time int `json:"orderedAtTimestamp"`
+	Cost int `json:"cost"`
 }

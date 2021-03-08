@@ -47,6 +47,7 @@ func getOrders(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if _, err = io.WriteString(w, string(jsonOrders)); err != nil {
 		log.WithField("err", err).Error("write response error")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -77,6 +78,7 @@ func getOrderInfo(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if _, err = io.WriteString(w, string(jsonDetailedOrder)); err != nil {
 		log.WithField("err", err).Error("write response error")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 

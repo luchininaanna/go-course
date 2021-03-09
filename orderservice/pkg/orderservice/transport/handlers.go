@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
@@ -9,17 +10,29 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"orderserver/pkg/orderservice/repository"
 	"orderserver/pkg/orderservice/service"
 	"time"
 )
 
-func Router() http.Handler {
+type server struct {
+	orderService service.OrderService
+}
+
+func newServer(db *sql.DB) *server {
+	r := repository.NewOrderRepository(db)
+	s := service.NewOrderService(r)
+	return &server{s}
+}
+
+func NewRouter(db *sql.DB) http.Handler {
+	srv := newServer(db)
 	r := mux.NewRouter()
 	s := r.PathPrefix("/api/v1").Subrouter()
 	s.HandleFunc("/hello-world", helloWorld).Methods(http.MethodGet)
 	s.HandleFunc("/orders", getOrders).Methods(http.MethodGet)
 	s.HandleFunc("/order/{ID:[0-9a-zA-Z]+}", getOrderInfo).Methods(http.MethodGet)
-	s.HandleFunc("/order", createOrder).Methods(http.MethodPost)
+	s.HandleFunc("/order", srv.createOrder).Methods(http.MethodPost)
 	return logMiddleware(r)
 }
 
@@ -33,7 +46,7 @@ func helloWorld(w http.ResponseWriter, _ *http.Request) {
 func getOrders(w http.ResponseWriter, _ *http.Request) {
 	orders := service.OrderList{
 		Orders: []service.Order{
-			{ID: uuid.New().String(), MenuItems: []service.MenuItem{{ID: uuid.New().String(), Quantity: 0}}},
+			{MenuItems: []service.MenuItem{{ID: uuid.New().String(), Quantity: 0}}},
 		},
 	}
 
@@ -52,7 +65,7 @@ func getOrders(w http.ResponseWriter, _ *http.Request) {
 }
 
 func getOrderInfo(w http.ResponseWriter, r *http.Request) {
-	id, found := mux.Vars(r)["ID"]
+	_, found := mux.Vars(r)["ID"]
 	if !found {
 		w.WriteHeader(http.StatusBadRequest)
 		_, err := fmt.Fprint(w, "Order not found")
@@ -63,7 +76,7 @@ func getOrderInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	detailedOrder := service.DetailedOrder{
-		Order: service.Order{ID: id, MenuItems: []service.MenuItem{{ID: uuid.New().String(), Quantity: 0}}},
+		Order: service.Order{MenuItems: []service.MenuItem{{ID: uuid.New().String(), Quantity: 0}}},
 		Cost:  1,
 		Time:  1,
 	}
@@ -82,7 +95,7 @@ func getOrderInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func createOrder(w http.ResponseWriter, r *http.Request) {
+func (srv *server) createOrder(w http.ResponseWriter, r *http.Request) {
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -91,22 +104,16 @@ func createOrder(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	var msg service.Order
-	err = json.Unmarshal(b, &msg)
+	var orderData service.Order
+	err = json.Unmarshal(b, &orderData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Fatal("Can't parse json response with error %v", err)
 	}
 
-	for _, menuItem := range msg.MenuItems {
-		if menuItem.Quantity == 0 {
-			log.Info("Order has item with zero quantity")
-		}
-	}
-
-	_, err = fmt.Fprint(w, uuid.New().String())
+	err = srv.orderService.AddOrder(orderData)
 	if err != nil {
-		log.Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 }
 

@@ -1,7 +1,6 @@
 package service
 
 type Order struct {
-	ID        string
 	MenuItems []MenuItem
 }
 

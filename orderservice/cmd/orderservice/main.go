@@ -23,17 +23,17 @@ func main() {
 	killSignalChan := getKillSignalChan()
 	srv := startServer(serverUrl)
 
-	createDbConnection(dbDriver, dataSourceName)
-
 	waitForKillSignal(killSignalChan)
 	log.Fatal(srv.Shutdown(context.Background()))
 }
 
 func startServer(serverUrl string) *http.Server {
-	router := transport.Router()
+	db := createDbConnection(dbDriver, dataSourceName)
+	router := transport.NewRouter(db)
 	srv := &http.Server{Addr: serverUrl, Handler: router}
 	go func() {
 		log.Fatal(srv.ListenAndServe())
+		log.Error(db.Close())
 	}()
 
 	return srv
@@ -55,14 +55,15 @@ func waitForKillSignal(killSignalChan <-chan os.Signal) {
 	}
 }
 
-func createDbConnection(dbDriver string, dataSourceName string) {
+func createDbConnection(dbDriver string, dataSourceName string) *sql.DB {
 	db, err := sql.Open(dbDriver, dataSourceName)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
 	if err := db.Ping(); err != nil {
 		log.Fatal(err)
 	}
+
+	return db
 }

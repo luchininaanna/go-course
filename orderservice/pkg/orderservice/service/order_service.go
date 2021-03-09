@@ -6,7 +6,19 @@ import (
 	"orderserver/pkg/orderservice/model"
 )
 
-func AddOrder(orderData Order) error {
+type orderService struct {
+	repository model.OrderRepository
+}
+
+type OrderService interface {
+	AddOrder(orderData Order) error
+}
+
+func NewOrderService(r model.OrderRepository) OrderService {
+	return &orderService{repository: r}
+}
+
+func (os *orderService) AddOrder(orderData Order) error {
 	err := validateOrder(orderData)
 	if err != nil {
 		return err
@@ -17,9 +29,7 @@ func AddOrder(orderData Order) error {
 		return err
 	}
 
-	//обращение к репозиторию
-
-	return nil
+	return os.repository.AddOrder(*orderModel)
 }
 
 func createOrderModel(orderData Order) (*model.Order, error) {
@@ -32,11 +42,7 @@ func createOrderModel(orderData Order) (*model.Order, error) {
 		menuItems = append(menuItems, model.MenuItem{ID: itemUuid, Quantity: menuItem.Quantity})
 	}
 
-	orderUuid, err := uuid.Parse(orderData.ID)
-	if err != nil {
-		return nil, err
-	}
-
+	orderUuid := uuid.New()
 	return &model.Order{ID: orderUuid, MenuItems: menuItems}, nil
 }
 

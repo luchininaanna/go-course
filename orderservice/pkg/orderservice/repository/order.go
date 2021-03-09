@@ -20,14 +20,26 @@ func (o orderRepository) AddOrder(order model.Order) error {
 		return err
 	}
 
-	_, err = o.db.Exec("INSERT INTO `order`(id, cost, created_at, updated_at, deleted_at) VALUES (?, 77, ?, null, null);", order.ID, time.Now())
+	orderIdBin, err := order.ID.MarshalBinary()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = o.db.Exec("INSERT INTO `order`(id, cost, created_at, updated_at, deleted_at) VALUES (?, 77, ?, null, null);", orderIdBin, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	for _, orderItem := range order.MenuItems {
-		_, err = o.db.Exec("INSERT INTO `order_item`(order_id, menu_item_id, quantity) VALUES (?, ?, ?);", order.ID, orderItem.ID, orderItem.Quantity)
+		orderItemIdBin, err := orderItem.ID.MarshalBinary()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		_, err = o.db.Exec("INSERT INTO `order_item`(order_id, menu_item_id, quantity) VALUES (?, ?, ?);", orderIdBin, orderItemIdBin, orderItem.Quantity)
 		if err != nil {
 			tx.Rollback()
 			return err

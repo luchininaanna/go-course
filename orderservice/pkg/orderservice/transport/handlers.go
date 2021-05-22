@@ -28,20 +28,12 @@ func NewRouter(db *sql.DB) http.Handler {
 	srv := newServer(db)
 	r := mux.NewRouter()
 	s := r.PathPrefix("/api/v1").Subrouter()
-	s.HandleFunc("/hello-world", helloWorld).Methods(http.MethodGet)
-	s.HandleFunc("/orders", srv.getOrders).Methods(http.MethodGet)
-	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.getOrderInfo).Methods(http.MethodGet)
 	s.HandleFunc("/order", srv.createOrder).Methods(http.MethodPost)
 	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.updateOrder).Methods(http.MethodPut)
 	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.deleteOrder).Methods(http.MethodDelete)
+	s.HandleFunc("/orders", srv.getOrders).Methods(http.MethodGet)
+	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.getOrderInfo).Methods(http.MethodGet)
 	return logMiddleware(r)
-}
-
-func helloWorld(w http.ResponseWriter, _ *http.Request) {
-	_, err := fmt.Fprint(w, "Hello World!")
-	if err != nil {
-		log.Error(err)
-	}
 }
 
 func (srv *server) getOrders(w http.ResponseWriter, _ *http.Request) {
@@ -99,7 +91,7 @@ func (srv *server) createOrder(w http.ResponseWriter, r *http.Request) {
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Fatal("Can't read request body with error %v", err)
+		log.Fatal("Can't read request body with error")
 	}
 
 	defer r.Body.Close()
@@ -108,7 +100,7 @@ func (srv *server) createOrder(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(b, &orderData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Fatal("Can't parse json response with error %v", err)
+		log.Fatal("Can't parse json response with error")
 	}
 
 	err = srv.orderService.AddOrder(orderData)
@@ -131,7 +123,7 @@ func (srv *server) updateOrder(w http.ResponseWriter, r *http.Request) {
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Fatal("Can't read request body with error %v", err)
+		log.Fatal("Can't read request body with error")
 	}
 
 	defer r.Body.Close()
@@ -140,7 +132,7 @@ func (srv *server) updateOrder(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(b, &orderData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Fatal("Can't parse json response with error %v", err)
+		log.Fatal("Can't parse json response with error")
 	}
 
 	err = srv.orderService.UpdateOrder(id, orderData)

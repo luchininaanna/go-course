@@ -17,9 +17,3 @@ type MenuItem struct {
 type OrderList struct {
 	Orders []Order `json:"orders"`
 }
-
-type DetailedOrder struct {
-	Order Order `json:"order"`
-	Time  int   `json:"orderedAtTimestamp"`
-	Cost  int   `json:"cost"`
-}

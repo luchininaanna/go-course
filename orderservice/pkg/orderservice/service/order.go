@@ -1,7 +1,12 @@
 package service
 
+import "time"
+
 type Order struct {
-	MenuItems []MenuItem
+	ID        string     `json:"id"`
+	MenuItems []MenuItem `json:"menuItems"`
+	Time      time.Time  `json:"orderedAtTimestamp"`
+	Cost      int        `json:"cost"`
 }
 
 type MenuItem struct {

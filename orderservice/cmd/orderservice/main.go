@@ -14,7 +14,7 @@ import (
 
 const serverUrl string = ":8000"
 const dbDriver string = "mysql"
-const dataSourceName string = "root:1234@/orderservice"
+const dataSourceName string = "root:1234@/orderservice?parseTime=true"
 
 func main() {
 	log.SetFormatter(&log.JSONFormatter{})

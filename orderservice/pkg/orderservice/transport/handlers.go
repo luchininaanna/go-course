@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"io"
@@ -30,9 +29,11 @@ func NewRouter(db *sql.DB) http.Handler {
 	r := mux.NewRouter()
 	s := r.PathPrefix("/api/v1").Subrouter()
 	s.HandleFunc("/hello-world", helloWorld).Methods(http.MethodGet)
-	s.HandleFunc("/orders", getOrders).Methods(http.MethodGet)
-	s.HandleFunc("/order/{ID:[0-9a-zA-Z]+}", getOrderInfo).Methods(http.MethodGet)
+	s.HandleFunc("/orders", srv.getOrders).Methods(http.MethodGet)
+	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.getOrderInfo).Methods(http.MethodGet)
 	s.HandleFunc("/order", srv.createOrder).Methods(http.MethodPost)
+	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.updateOrder).Methods(http.MethodPut)
+	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.deleteOrder).Methods(http.MethodDelete)
 	return logMiddleware(r)
 }
 
@@ -43,11 +44,11 @@ func helloWorld(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func getOrders(w http.ResponseWriter, _ *http.Request) {
-	orders := service.OrderList{
-		Orders: []service.Order{
-			{MenuItems: []service.MenuItem{{ID: uuid.New().String(), Quantity: 0}}},
-		},
+func (srv *server) getOrders(w http.ResponseWriter, _ *http.Request) {
+	orders, err := srv.orderService.GetOrders()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	jsonOrders, err := json.Marshal(orders)
@@ -64,8 +65,8 @@ func getOrders(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func getOrderInfo(w http.ResponseWriter, r *http.Request) {
-	_, found := mux.Vars(r)["ID"]
+func (srv *server) getOrderInfo(w http.ResponseWriter, r *http.Request) {
+	id, found := mux.Vars(r)["ID"]
 	if !found {
 		w.WriteHeader(http.StatusBadRequest)
 		_, err := fmt.Fprint(w, "Order not found")
@@ -75,13 +76,12 @@ func getOrderInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	detailedOrder := service.DetailedOrder{
-		Order: service.Order{MenuItems: []service.MenuItem{{ID: uuid.New().String(), Quantity: 0}}},
-		Cost:  1,
-		Time:  1,
+	order, err := srv.orderService.GetOrderInfo(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	jsonDetailedOrder, err := json.Marshal(detailedOrder)
+	jsonOrder, err := json.Marshal(order)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -89,7 +89,7 @@ func getOrderInfo(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	if _, err = io.WriteString(w, string(jsonDetailedOrder)); err != nil {
+	if _, err = io.WriteString(w, string(jsonOrder)); err != nil {
 		log.WithField("err", err).Error("write response error")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -112,6 +112,55 @@ func (srv *server) createOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = srv.orderService.AddOrder(orderData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+}
+
+func (srv *server) updateOrder(w http.ResponseWriter, r *http.Request) {
+	id, found := mux.Vars(r)["ID"]
+	if !found {
+		w.WriteHeader(http.StatusBadRequest)
+		_, err := fmt.Fprint(w, "Order not found")
+		if err != nil {
+			log.Error(err)
+		}
+		return
+	}
+
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Fatal("Can't read request body with error %v", err)
+	}
+
+	defer r.Body.Close()
+
+	var orderData service.Order
+	err = json.Unmarshal(b, &orderData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Fatal("Can't parse json response with error %v", err)
+	}
+
+	err = srv.orderService.UpdateOrder(id, orderData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+}
+
+func (srv *server) deleteOrder(w http.ResponseWriter, r *http.Request) {
+	id, found := mux.Vars(r)["ID"]
+	if !found {
+		w.WriteHeader(http.StatusBadRequest)
+		_, err := fmt.Fprint(w, "Order not found")
+		if err != nil {
+			log.Error(err)
+		}
+		return
+	}
+
+	err := srv.orderService.DeleteOrder(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}

@@ -3,11 +3,8 @@ ifneq (,$(wildcard ./docker/.env))
     export
 endif
 
-run:
-	go run cmd/orderservice/main.go
-
-build:
-	go build cmd/orderservice/main.go
+build: fmt lint test
+	go build -o ./bin/orderservice cmd/orderservice/main.go
 
 fmt:
 	go fmt ./...

@@ -1,9 +1,9 @@
 version: '3'
 
 services:
-  database:
+  orderservice_db:
     image: mysql:8.0
-    container_name: orderservice
+    container_name: orderservice_db
     restart: always
     env_file:
       - ./.env
@@ -11,6 +11,16 @@ services:
       MYSQL_DATABASE: ${DATABASE_NAME}
       MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
     volumes:
-      - ./database:/var/lib/mysql
+      - ./../../var/database:/var/lib/mysql
+
+  orderservice:
+    container_name: orderservice
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ./.env
     ports:
-      - "3306:3306"
+      - ${SERVER_PORT}:${SERVER_PORT}
+    depends_on:
+      - orderservice_db

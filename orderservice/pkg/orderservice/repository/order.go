@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"orderserver/pkg/orderservice/model"
 	"strconv"
 	"strings"
@@ -25,26 +26,30 @@ func (o orderRepository) AddOrder(order model.Order) error {
 
 	orderIdBin, err := order.ID.MarshalBinary()
 	if err != nil {
-		tx.Rollback()
+		log.Error(tx.Rollback())
 		return err
 	}
 
-	_, err = o.db.Exec("INSERT INTO `order`(id, cost, created_at, updated_at, deleted_at) VALUES (?, 77, ?, null, null);", orderIdBin, time.Now())
+	_, err = tx.Exec(""+
+		"INSERT INTO `order`(id, cost, created_at, updated_at, deleted_at) "+""+
+		"VALUES (?, 77, ?, null, null);", orderIdBin, time.Now())
 	if err != nil {
-		tx.Rollback()
+		log.Error(tx.Rollback())
 		return err
 	}
 
 	for _, orderItem := range order.MenuItems {
 		orderItemIdBin, err := orderItem.ID.MarshalBinary()
 		if err != nil {
-			tx.Rollback()
+			log.Error(tx.Rollback())
 			return err
 		}
 
-		_, err = o.db.Exec("INSERT INTO `order_item`(order_id, menu_item_id, quantity) VALUES (?, ?, ?);", orderIdBin, orderItemIdBin, orderItem.Quantity)
+		_, err = tx.Exec(""+
+			"INSERT INTO `order_item`(order_id, menu_item_id, quantity) "+
+			"VALUES (?, ?, ?);", orderIdBin, orderItemIdBin, orderItem.Quantity)
 		if err != nil {
-			tx.Rollback()
+			log.Error(tx.Rollback())
 			return err
 		}
 	}
@@ -60,28 +65,30 @@ func (o orderRepository) UpdateOrder(order model.Order) error {
 
 	orderIdBin, err := order.ID.MarshalBinary()
 	if err != nil {
-		tx.Rollback()
+		log.Error(tx.Rollback())
 		return err
 	}
 
-	//удалить все позиции по заказу
-	_, err = o.db.Exec("DELETE FROM `order_item` WHERE order_id = ?;", orderIdBin)
+	_, err = tx.Exec(""+
+		"DELETE FROM `order_item` "+
+		"WHERE order_id = ?;", orderIdBin)
 	if err != nil {
-		tx.Rollback()
+		log.Error(tx.Rollback())
 		return err
 	}
 
-	//добавить позиции по заказу
 	for _, orderItem := range order.MenuItems {
 		orderItemIdBin, err := orderItem.ID.MarshalBinary()
 		if err != nil {
-			tx.Rollback()
+			log.Error(tx.Rollback())
 			return err
 		}
 
-		_, err = o.db.Exec("INSERT INTO `order_item`(order_id, menu_item_id, quantity) VALUES (?, ?, ?);", orderIdBin, orderItemIdBin, orderItem.Quantity)
+		_, err = tx.Exec(""+
+			"INSERT INTO `order_item`(order_id, menu_item_id, quantity) "+
+			"VALUES (?, ?, ?);", orderIdBin, orderItemIdBin, orderItem.Quantity)
 		if err != nil {
-			tx.Rollback()
+			log.Error(tx.Rollback())
 			return err
 		}
 	}
@@ -90,24 +97,18 @@ func (o orderRepository) UpdateOrder(order model.Order) error {
 }
 
 func (o orderRepository) DeleteOrder(orderUuid uuid.UUID) error {
-	tx, err := o.db.Begin()
-	if err != nil {
-		return err
-	}
-
 	orderIdBin, err := orderUuid.MarshalBinary()
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
-	_, err = o.db.Exec("DELETE FROM `order` WHERE id = ?;", orderIdBin)
+	_, err = o.db.Exec(""+
+		"DELETE FROM `order` WHERE id = ?;", orderIdBin)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (o orderRepository) GetOrder(orderUuid uuid.UUID) (*model.Order, error) {

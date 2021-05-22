@@ -92,7 +92,7 @@ func (os *orderService) GetOrderInfo(id string) (*Order, error) {
 }
 
 func (os *orderService) GetOrders() ([]Order, error) {
-	var or []Order
+	var orderList []Order
 	orders, err := os.repository.GetOrders()
 	if err != nil {
 		return nil, err
@@ -106,16 +106,16 @@ func (os *orderService) GetOrders() ([]Order, error) {
 				item.Quantity,
 			})
 		}
-		o := Order{
+		orderListElement := Order{
 			order.ID.String(),
 			menuItems,
 			order.Time,
 			order.Cost,
 		}
-		or = append(or, o)
+		orderList = append(orderList, orderListElement)
 	}
 
-	return or, nil
+	return orderList, nil
 }
 
 func createOrderModel(orderData Order) (*model.Order, error) {
